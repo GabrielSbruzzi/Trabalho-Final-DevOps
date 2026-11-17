@@ -1,0 +1,74 @@
+name: Pipeline CI - NexaTech
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  setup:
+    name: "Setup"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout do código
+        uses: actions/checkout@v4
+
+      - name: Listar arquivos do projeto
+        run: ls -la
+
+  validation:
+    name: "Validação"
+    runs-on: ubuntu-latest
+    needs: setup
+    steps:
+      - name: Checkout do código
+        uses: actions/checkout@v4
+
+      - name: Verificar arquivos obrigatórios
+        run: |
+          test -f index.html
+          test -f assets/style.css
+          test -f assets/script.js
+          echo "Arquivos obrigatórios encontrados."
+
+      - name: Validar referências locais
+        run: |
+          grep -q 'assets/style.css' index.html
+          grep -q 'assets/script.js' index.html
+          echo "Referências locais verificadas."
+
+  build:
+    name: "Build"
+    runs-on: ubuntu-latest
+    needs: validation
+    steps:
+      - name: Checkout do código
+        uses: actions/checkout@v4
+
+      - name: Preparar diretório de publicação
+        run: |
+          mkdir dist
+          cp index.html dist/
+          cp -r assets dist/
+          test -f dist/index.html
+          ls -la dist
+
+      - name: Armazenar artefato do site
+        uses: actions/upload-artifact@v4
+        with:
+          name: nexatech-site
+          path: dist/
+
+  deploy:
+    name: "Deploy via Cloudflare Pages"
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Informar estratégia de deploy
+        run: |
+          echo "A publicação é realizada automaticamente pelo Cloudflare Pages."
+          echo "O Cloudflare observa a branch main conectada ao repositório."
+          echo "Após o push, uma nova versão do site é publicada."
